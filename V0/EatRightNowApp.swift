@@ -4,7 +4,7 @@ import SwiftUI
 struct EatRightNowApp: App {
     var body: some Scene {
         WindowGroup {
-            NutriRootView(viewModel: MockRootViewModel())
+            RootView()
         }
     }
 }

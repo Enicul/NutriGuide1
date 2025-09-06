@@ -31,21 +31,12 @@ struct HomeView: View {
                         SmartStateCard(viewModel: viewModel)
                             .padding(.horizontal)
                         
-                        // Action buttons
-                        VStack(spacing: 12) {
-                            Button("Sync from Smartwatch") {
-                                // This will be handled by the tab navigation
-                            }
-                            .ernPrimary()
-                            .frame(maxWidth: .infinity)
-                            .padding(.horizontal)
-                            
-                            Button("Switch State (Test)") {
-                                viewModel.cycleThroughStates()
-                            }
-                            .ernTertiary()
-                            .padding(.horizontal)
+                        // State switch button (for testing)
+                        Button("Switch State (Test)") {
+                            viewModel.cycleThroughStates()
                         }
+                        .ernTertiary()
+                        .padding(.horizontal)
                         
                         Spacer(minLength: 40)
                     }
