@@ -1,0 +1,19 @@
+# OpenAI API Configuration
+OPENAI_API_KEY=your_openai_api_key_here
+
+# Database Configuration
+DATABASE_URL=sqlite:///./spark.db
+
+# API Configuration
+API_HOST=0.0.0.0
+API_PORT=8000
+
+# Cost Optimization Settings
+MAX_TOKENS_PER_REQUEST=1000
+AI_MODEL=gpt-3.5-turbo
+AI_TEMPERATURE=0.7
+
+# Feature Flags
+ENABLE_AI_RECOMMENDATIONS=true
+ENABLE_COST_TRACKING=true
+ENABLE_FALLBACK_RECOMMENDATIONS=true

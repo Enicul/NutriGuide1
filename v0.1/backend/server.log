@@ -1,0 +1,59 @@
+WARNING:services.ai_service:OpenAI API key not found. AI features will use fallback mode.
+INFO:     Will watch for changes in these directories: ['/Users/fanyupei/Codes/agen_MVP_dev/spark/backend']
+INFO:     Uvicorn running on http://0.0.0.0:8000 (Press CTRL+C to quit)
+INFO:     Started reloader process [71092] using WatchFiles
+WARNING:services.ai_service:OpenAI API key not found. AI features will use fallback mode.
+INFO:     Started server process [71158]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:watchfiles.main:3 changes detected
+Seeded 5 foods into the database
+INFO:     127.0.0.1:59141 - "GET / HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59143 - "GET /docs HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59145 - "GET /api/foods/ HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59147 - "GET /api/foods/food_001 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59149 - "POST /api/foods/recommend/ HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59151 - "GET /api/foods/ HTTP/1.1" 200 OK
+ERROR:services.nutrition_engine:Error analyzing meal balance: AI service not available - no API key provided
+INFO:     127.0.0.1:59153 - "POST /api/foods/analyze-meal/ HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59155 - "GET /api/foods/ HTTP/1.1" 200 OK
+ERROR:services.nutrition_engine:Error suggesting food swaps: AI service not available - no API key provided
+INFO:     127.0.0.1:59157 - "POST /api/foods/suggest-swaps/ HTTP/1.1" 200 OK
+ERROR:services.nutrition_engine:Error calculating nutrition goals: AI service not available - no API key provided
+INFO:     127.0.0.1:59159 - "POST /api/nutrition/daily-goals/ HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59161 - "GET /api/foods/ HTTP/1.1" 200 OK
+ERROR:services.nutrition_engine:Error generating meal plan: AI service not available - no API key provided
+INFO:     127.0.0.1:59163 - "POST /api/nutrition/meal-plan/ HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59165 - "POST /api/nutrition/trends/ HTTP/1.1" 422 Unprocessable Entity
+INFO:     127.0.0.1:59167 - "GET /api/nutrition/ai-status/ HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59169 - "GET /api/foods/ai-usage-stats/ HTTP/1.1" 200 OK
+ERROR:services.nutrition_engine:Error calculating nutrition goals: AI service not available - no API key provided
+INFO:     127.0.0.1:59171 - "POST /api/nutrition/daily-goals/ HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59173 - "GET /api/foods/ HTTP/1.1" 200 OK
+ERROR:services.nutrition_engine:Error generating meal plan: AI service not available - no API key provided
+INFO:     127.0.0.1:59175 - "POST /api/nutrition/meal-plan/ HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59177 - "POST /api/foods/recommend/ HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59179 - "GET /api/foods/ HTTP/1.1" 200 OK
+ERROR:services.nutrition_engine:Error analyzing meal balance: AI service not available - no API key provided
+INFO:     127.0.0.1:59181 - "POST /api/foods/analyze-meal/ HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59183 - "POST /api/foods/recommend/ HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59185 - "POST /api/nutrition/trends/ HTTP/1.1" 422 Unprocessable Entity
+INFO:     127.0.0.1:59187 - "GET /api/foods/invalid_id HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:59189 - "POST /api/foods/recommend/ HTTP/1.1" 422 Unprocessable Entity
+INFO:     127.0.0.1:59191 - "POST /api/foods/recommend/ HTTP/1.1" 422 Unprocessable Entity
+INFO:     127.0.0.1:59301 - "GET /api/foods/ HTTP/1.1" 200 OK
+INFO:watchfiles.main:4 changes detected
+WARNING:  WatchFiles detected changes in 'services/nutrition_engine.py', 'test_comprehensive.py', 'db/test_data.py', 'test_corrected.py'. Reloading...
+INFO:     Shutting down
+INFO:     Waiting for application shutdown.
+INFO:     Application shutdown complete.
+INFO:     Finished server process [71158]
+WARNING:services.ai_service:OpenAI API key not found. AI features will use fallback mode.
+INFO:watchfiles.main:3 changes detected
+INFO:     Started server process [73739]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:watchfiles.main:3 changes detected
+Seeded 5 foods into the database
+INFO:     127.0.0.1:57007 - "GET /api/foods/ HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57038 - "GET /api/foods/ HTTP/1.1" 200 OK

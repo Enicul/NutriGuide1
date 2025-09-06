@@ -1,0 +1,690 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Spark - Food Recommendations</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* iOS-style mobile interface */
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+            background: #f2f2f7;
+            overflow-x: hidden;
+        }
+        
+        .ios-card {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            border: 0.5px solid rgba(0,0,0,0.04);
+        }
+        
+        .ios-button {
+            background: #007AFF;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-weight: 600;
+            transition: all 0.2s;
+        }
+        
+        .ios-button:active {
+            background: #0056CC;
+            transform: scale(0.98);
+        }
+        
+        .ios-input {
+            background: #f2f2f7;
+            border: 1px solid #d1d1d6;
+            border-radius: 8px;
+            padding: 12px 16px;
+            font-size: 16px;
+        }
+        
+        .ios-input:focus {
+            outline: none;
+            border-color: #007AFF;
+            background: white;
+        }
+        
+        .tab-bar {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: white;
+            border-top: 0.5px solid #d1d1d6;
+            padding: 8px 0 34px 0; /* 34px for iPhone home indicator */
+        }
+        
+        .tab-item {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 8px;
+            color: #8e8e93;
+            transition: color 0.2s;
+        }
+        
+        .tab-item.active {
+            color: #007AFF;
+        }
+        
+        .tab-icon {
+            font-size: 24px;
+            margin-bottom: 4px;
+        }
+        
+        .tab-label {
+            font-size: 10px;
+            font-weight: 500;
+        }
+        
+        .content-area {
+            padding-bottom: 100px; /* Space for tab bar */
+            min-height: 100vh;
+        }
+        
+        .status-bar {
+            height: 44px;
+            background: white;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 20px;
+            font-size: 17px;
+            font-weight: 600;
+        }
+        
+        .loading { opacity: 0.6; pointer-events: none; }
+        .error { background-color: #ffebee; border-color: #ffcdd2; color: #c62828; }
+        .success { background-color: #e8f5e8; border-color: #c8e6c9; color: #2e7d32; }
+        
+        /* iPhone X+ safe area */
+        .safe-area-top { padding-top: env(safe-area-inset-top); }
+        .safe-area-bottom { padding-bottom: env(safe-area-inset-bottom); }
+        
+        /* Swipe gestures */
+        .swipe-container {
+            overflow: hidden;
+            position: relative;
+        }
+        
+        .swipe-content {
+            display: flex;
+            transition: transform 0.3s ease;
+        }
+        
+        .swipe-page {
+            min-width: 100%;
+            flex-shrink: 0;
+        }
+    </style>
+</head>
+<body class="bg-gray-50">
+    <!-- iOS Status Bar -->
+    <div class="status-bar safe-area-top">
+        <div class="flex items-center">
+            <span class="text-lg">9:41</span>
+        </div>
+        <div class="text-center">
+            <span class="text-lg font-semibold">Spark</span>
+        </div>
+        <div class="flex items-center space-x-1">
+            <div class="w-4 h-2 bg-black rounded-sm"></div>
+            <div class="w-4 h-2 bg-black rounded-sm"></div>
+            <div class="w-4 h-2 bg-black rounded-sm"></div>
+        </div>
+    </div>
+
+    <!-- Main Content Area -->
+    <div class="content-area">
+        <!-- Status Messages -->
+        <div id="status-messages" class="px-4 pt-2"></div>
+
+        <!-- Swipe Container for Pages -->
+        <div class="swipe-container">
+            <div class="swipe-content" id="swipe-content">
+                <!-- Foods Page -->
+                <div class="swipe-page" id="page-foods">
+                    <div class="px-4 py-4">
+                        <h2 class="text-xl font-semibold mb-4 text-gray-900">Discover Foods</h2>
+                        <div id="foods-grid" class="space-y-3">
+                            <div class="text-center py-8">
+                                <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500 mx-auto"></div>
+                                <p class="mt-2 text-gray-600">Loading foods...</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Recommendations Page -->
+                <div class="swipe-page" id="page-recommendations">
+                    <div class="px-4 py-4">
+                        <h2 class="text-xl font-semibold mb-4 text-gray-900">Get Recommendations</h2>
+                        
+                        <!-- Recommendation Form -->
+                        <div class="ios-card p-4 mb-4">
+                            <h3 class="text-lg font-semibold mb-4">Your Preferences</h3>
+                            <div class="space-y-4">
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-2">Diet Style</label>
+                                    <select id="diet-style" class="ios-input w-full">
+                                        <option value="omnivore">Omnivore</option>
+                                        <option value="vegetarian">Vegetarian</option>
+                                        <option value="vegan">Vegan</option>
+                                        <option value="keto">Keto</option>
+                                    </select>
+                                </div>
+                                
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-2">Budget</label>
+                                    <select id="budget" class="ios-input w-full">
+                                        <option value="$">$ (Budget)</option>
+                                        <option value="$$" selected>$$ (Moderate)</option>
+                                        <option value="$$$">$$$ (Premium)</option>
+                                    </select>
+                                </div>
+                                
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-2">Activity Level</label>
+                                    <select id="activity-level" class="ios-input w-full">
+                                        <option value="low">Low</option>
+                                        <option value="moderate" selected>Moderate</option>
+                                        <option value="high">High</option>
+                                        <option value="very_high">Very High</option>
+                                    </select>
+                                </div>
+                                
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-2">Sleep Hours</label>
+                                    <input type="number" id="sleep-hours" min="4" max="12" step="0.5" value="8" 
+                                           class="ios-input w-full">
+                                </div>
+                            </div>
+                            
+                            <button onclick="getRecommendations()" 
+                                    class="ios-button w-full mt-4 py-3 text-center">
+                                Get Recommendations
+                            </button>
+                        </div>
+
+                        <!-- Recommendations Results -->
+                        <div id="recommendations-results" class="hidden">
+                            <h3 class="text-lg font-semibold mb-4">Recommended Foods</h3>
+                            <div id="recommendations-grid" class="space-y-3">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Analysis Page -->
+                <div class="swipe-page" id="page-analysis">
+                    <div class="px-4 py-4">
+                        <h2 class="text-xl font-semibold mb-4 text-gray-900">Analyze Your Meal</h2>
+                        
+                        <!-- Meal Analysis Form -->
+                        <div class="ios-card p-4 mb-4">
+                            <h3 class="text-lg font-semibold mb-4">Meal Composition</h3>
+                            
+                            <div class="mb-4">
+                                <label class="block text-sm font-medium text-gray-700 mb-2">Meal Type</label>
+                                <select id="meal-type" class="ios-input w-full">
+                                    <option value="breakfast">Breakfast</option>
+                                    <option value="lunch" selected>Lunch</option>
+                                    <option value="dinner">Dinner</option>
+                                    <option value="snack">Snack</option>
+                                </select>
+                            </div>
+                            
+                            <div id="meal-foods" class="space-y-3">
+                                <div class="flex items-center space-x-3 p-3 border border-gray-200 rounded-lg">
+                                    <div class="flex-1">
+                                        <label class="block text-sm font-medium text-gray-700 mb-1">Food</label>
+                                        <select id="food-select-0" class="ios-input w-full">
+                                            <option value="">Select a food...</option>
+                                        </select>
+                                    </div>
+                                    <div class="w-20">
+                                        <label class="block text-sm font-medium text-gray-700 mb-1">Qty</label>
+                                        <input type="number" id="quantity-0" min="0.1" max="10" step="0.1" value="1.0" 
+                                               class="ios-input w-full">
+                                    </div>
+                                    <button onclick="removeFood(0)" class="px-3 py-2 bg-red-500 text-white rounded-md text-sm">
+                                        ×
+                                    </button>
+                                </div>
+                            </div>
+                            
+                            <button onclick="addFood()" class="w-full px-4 py-3 bg-gray-100 text-gray-700 rounded-lg mb-4 text-center">
+                                + Add Food
+                            </button>
+                            
+                            <button onclick="analyzeMeal()" 
+                                    class="ios-button w-full py-3 text-center">
+                                Analyze Meal
+                            </button>
+                        </div>
+
+                        <!-- Analysis Results -->
+                        <div id="analysis-results" class="hidden ios-card p-4">
+                            <h3 class="text-lg font-semibold mb-4">Analysis Results</h3>
+                            <div id="analysis-content">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- iOS Tab Bar -->
+    <div class="tab-bar safe-area-bottom">
+        <div class="flex">
+            <div class="tab-item active" onclick="showPage('foods')">
+                <div class="tab-icon">🍎</div>
+                <div class="tab-label">Foods</div>
+            </div>
+            <div class="tab-item" onclick="showPage('recommendations')">
+                <div class="tab-icon">💡</div>
+                <div class="tab-label">Recommend</div>
+            </div>
+            <div class="tab-item" onclick="showPage('analysis')">
+                <div class="tab-icon">📊</div>
+                <div class="tab-label">Analyze</div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE = 'http://localhost:8000';
+        let foods = [];
+        let foodCounter = 0;
+        let currentPage = 'foods';
+
+        // Initialize the app
+        document.addEventListener('DOMContentLoaded', function() {
+            loadFoods();
+            showPage('foods');
+        });
+
+        // Page switching with swipe support
+        function showPage(pageName) {
+            currentPage = pageName;
+            
+            // Update tab bar
+            document.querySelectorAll('.tab-item').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            event.currentTarget.classList.add('active');
+            
+            // Move to page
+            const swipeContent = document.getElementById('swipe-content');
+            const pageIndex = ['foods', 'recommendations', 'analysis'].indexOf(pageName);
+            swipeContent.style.transform = `translateX(-${pageIndex * 100}%)`;
+        }
+
+        // Status message functions
+        function showStatus(message, type = 'info') {
+            const statusDiv = document.getElementById('status-messages');
+            const alertClass = type === 'error' ? 'error' : type === 'success' ? 'success' : 'bg-blue-50 border border-blue-200';
+            const icon = type === 'error' ? '❌' : type === 'success' ? '✅' : 'ℹ️';
+            
+            statusDiv.innerHTML = `
+                <div class="${alertClass} rounded-lg p-3">
+                    <div class="flex">
+                        <div class="ml-3">
+                            <h3 class="text-sm font-medium">${icon} ${message}</h3>
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            // Auto-hide after 3 seconds
+            setTimeout(() => {
+                statusDiv.innerHTML = '';
+            }, 3000);
+        }
+
+        // Load all foods
+        async function loadFoods() {
+            try {
+                showStatus('Loading foods...', 'info');
+                const response = await fetch(`${API_BASE}/api/foods/`);
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                
+                foods = await response.json();
+                displayFoods(foods);
+                populateFoodSelects();
+                showStatus(`Loaded ${foods.length} foods!`, 'success');
+            } catch (error) {
+                console.error('Error loading foods:', error);
+                showStatus(`Error loading foods: ${error.message}`, 'error');
+            }
+        }
+
+        // Display foods in mobile-friendly list
+        function displayFoods(foodsToShow) {
+            const grid = document.getElementById('foods-grid');
+            
+            if (foodsToShow.length === 0) {
+                grid.innerHTML = '<div class="text-center py-8 text-gray-500">No foods available</div>';
+                return;
+            }
+            
+            grid.innerHTML = foodsToShow.map(food => `
+                <div class="ios-card p-4">
+                    <div class="flex items-start justify-between mb-2">
+                        <h3 class="text-lg font-semibold text-gray-900">${food.name}</h3>
+                        <span class="text-sm text-gray-500 capitalize">${food.category}</span>
+                    </div>
+                    <div class="flex space-x-2 mb-3">
+                        <span class="inline-block bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded-full">
+                            ${food.kcal} kcal
+                        </span>
+                        <span class="inline-block bg-green-100 text-green-800 text-xs px-2 py-1 rounded-full">
+                            ${food.est_price_range}
+                        </span>
+                    </div>
+                    <div class="grid grid-cols-3 gap-2 text-sm text-gray-600 mb-3">
+                        <div class="text-center">
+                            <div class="font-semibold">${food.macros.protein_g}g</div>
+                            <div class="text-xs text-gray-500">Protein</div>
+                        </div>
+                        <div class="text-center">
+                            <div class="font-semibold">${food.macros.carbs_g}g</div>
+                            <div class="text-xs text-gray-500">Carbs</div>
+                        </div>
+                        <div class="text-center">
+                            <div class="font-semibold">${food.macros.fat_g}g</div>
+                            <div class="text-xs text-gray-500">Fat</div>
+                        </div>
+                    </div>
+                    <div class="flex flex-wrap gap-1">
+                        ${food.tags.map(tag => `<span class="inline-block bg-gray-100 text-gray-700 text-xs px-2 py-1 rounded">${tag}</span>`).join('')}
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        // Populate food select options
+        function populateFoodSelects() {
+            const selects = document.querySelectorAll('[id^="food-select-"]');
+            selects.forEach(select => {
+                select.innerHTML = '<option value="">Select a food...</option>' +
+                    foods.map(food => `<option value="${food.id}">${food.name}</option>`).join('');
+            });
+        }
+
+        // Get recommendations
+        async function getRecommendations() {
+            try {
+                showStatus('Getting recommendations...', 'info');
+                
+                const recommendationData = {
+                    user_pref: {
+                        diet_style: document.getElementById('diet-style').value,
+                        dislikes: [],
+                        budget: document.getElementById('budget').value,
+                        home_area: 'downtown'
+                    },
+                    health_context: {
+                        sleep_hours: parseFloat(document.getElementById('sleep-hours').value),
+                        activity_level: document.getElementById('activity-level').value,
+                        mood_energy: 'normal'
+                    },
+                    limit: 5
+                };
+                
+                const response = await fetch(`${API_BASE}/api/foods/recommend/`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(recommendationData)
+                });
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                
+                const recommendations = await response.json();
+                displayRecommendations(recommendations);
+                showStatus(`Found ${recommendations.length} recommendations!`, 'success');
+            } catch (error) {
+                console.error('Error getting recommendations:', error);
+                showStatus(`Error getting recommendations: ${error.message}`, 'error');
+            }
+        }
+
+        // Display recommendations
+        function displayRecommendations(recommendations) {
+            const resultsDiv = document.getElementById('recommendations-results');
+            const grid = document.getElementById('recommendations-grid');
+            
+            if (recommendations.length === 0) {
+                grid.innerHTML = '<div class="text-center py-8 text-gray-500">No recommendations found</div>';
+            } else {
+                grid.innerHTML = recommendations.map(food => `
+                    <div class="ios-card p-4 border-l-4 border-blue-500">
+                        <div class="flex items-start justify-between mb-2">
+                            <h4 class="text-lg font-semibold text-gray-900">${food.name}</h4>
+                            <span class="text-sm text-gray-500 capitalize">${food.category}</span>
+                        </div>
+                        <div class="flex space-x-2 mb-3">
+                            <span class="inline-block bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded-full">
+                                ${food.kcal} kcal
+                            </span>
+                            <span class="inline-block bg-green-100 text-green-800 text-xs px-2 py-1 rounded-full">
+                                ${food.est_price_range}
+                            </span>
+                        </div>
+                        <div class="grid grid-cols-3 gap-2 text-sm text-gray-600">
+                            <div class="text-center">
+                                <div class="font-semibold">${food.macros.protein_g}g</div>
+                                <div class="text-xs text-gray-500">Protein</div>
+                            </div>
+                            <div class="text-center">
+                                <div class="font-semibold">${food.macros.carbs_g}g</div>
+                                <div class="text-xs text-gray-500">Carbs</div>
+                            </div>
+                            <div class="text-center">
+                                <div class="font-semibold">${food.macros.fat_g}g</div>
+                                <div class="text-xs text-gray-500">Fat</div>
+                            </div>
+                        </div>
+                    </div>
+                `).join('');
+            }
+            
+            resultsDiv.classList.remove('hidden');
+        }
+
+        // Add food to meal
+        function addFood() {
+            const container = document.getElementById('meal-foods');
+            const newFoodDiv = document.createElement('div');
+            newFoodDiv.className = 'flex items-center space-x-3 p-3 border border-gray-200 rounded-lg';
+            newFoodDiv.innerHTML = `
+                <div class="flex-1">
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Food</label>
+                    <select id="food-select-${foodCounter}" class="ios-input w-full">
+                        <option value="">Select a food...</option>
+                        ${foods.map(food => `<option value="${food.id}">${food.name}</option>`).join('')}
+                    </select>
+                </div>
+                <div class="w-20">
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Qty</label>
+                    <input type="number" id="quantity-${foodCounter}" min="0.1" max="10" step="0.1" value="1.0" 
+                           class="ios-input w-full">
+                </div>
+                <button onclick="removeFood(${foodCounter})" class="px-3 py-2 bg-red-500 text-white rounded-md text-sm">
+                    ×
+                </button>
+            `;
+            
+            container.appendChild(newFoodDiv);
+            foodCounter++;
+        }
+
+        // Remove food from meal
+        function removeFood(index) {
+            const foodDivs = document.querySelectorAll('#meal-foods > div');
+            if (foodDivs.length > 1) {
+                foodDivs[index].remove();
+            }
+        }
+
+        // Analyze meal
+        async function analyzeMeal() {
+            try {
+                showStatus('Analyzing meal...', 'info');
+                
+                // Collect meal foods
+                const mealFoods = [];
+                const foodDivs = document.querySelectorAll('#meal-foods > div');
+                
+                foodDivs.forEach(div => {
+                    const foodSelect = div.querySelector('select');
+                    const quantityInput = div.querySelector('input[type="number"]');
+                    
+                    if (foodSelect.value) {
+                        const food = foods.find(f => f.id === foodSelect.value);
+                        if (food) {
+                            mealFoods.push(food);
+                        }
+                    }
+                });
+                
+                if (mealFoods.length === 0) {
+                    showStatus('Please select at least one food for analysis', 'error');
+                    return;
+                }
+                
+                const mealData = {
+                    meal_foods: mealFoods,
+                    daily_goals: {
+                        daily_calories: 2000,
+                        protein_g: 120.0,
+                        carbs_g: 250.0,
+                        fat_g: 67.0
+                    },
+                    meal_type: document.getElementById('meal-type').value
+                };
+                
+                const response = await fetch(`${API_BASE}/api/foods/analyze-meal/`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(mealData)
+                });
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                
+                const analysis = await response.json();
+                displayAnalysis(analysis);
+                showStatus('Meal analysis completed!', 'success');
+            } catch (error) {
+                console.error('Error analyzing meal:', error);
+                showStatus(`Error analyzing meal: ${error.message}`, 'error');
+            }
+        }
+
+        // Display analysis results
+        function displayAnalysis(analysis) {
+            const resultsDiv = document.getElementById('analysis-results');
+            const contentDiv = document.getElementById('analysis-content');
+            
+            contentDiv.innerHTML = `
+                <div class="space-y-4">
+                    <div class="text-center">
+                        <h4 class="font-semibold text-gray-900 mb-2">Nutrition Summary</h4>
+                        <div class="text-3xl font-bold text-blue-600 mb-2">
+                            ${analysis.total_calories || 'N/A'} kcal
+                        </div>
+                        <div class="grid grid-cols-3 gap-4 text-sm">
+                            <div class="text-center">
+                                <div class="font-semibold text-lg">${analysis.total_protein || 'N/A'}g</div>
+                                <div class="text-gray-500">Protein</div>
+                            </div>
+                            <div class="text-center">
+                                <div class="font-semibold text-lg">${analysis.total_carbs || 'N/A'}g</div>
+                                <div class="text-gray-500">Carbs</div>
+                            </div>
+                            <div class="text-center">
+                                <div class="font-semibold text-lg">${analysis.total_fat || 'N/A'}g</div>
+                                <div class="text-gray-500">Fat</div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="text-center">
+                        <h4 class="font-semibold text-gray-900 mb-2">Balance Score</h4>
+                        <div class="text-4xl font-bold text-blue-600 mb-2">
+                            ${analysis.balance_score || 'N/A'}/10
+                        </div>
+                        <p class="text-sm text-gray-600">
+                            ${analysis.balance_score >= 8 ? 'Excellent balance! 🎉' : 
+                              analysis.balance_score >= 6 ? 'Good balance 👍' : 
+                              'Could be improved 💪'}
+                        </p>
+                    </div>
+                    
+                    ${analysis.suggestions && analysis.suggestions.length > 0 ? `
+                        <div>
+                            <h4 class="font-semibold text-gray-900 mb-2">Suggestions</h4>
+                            <ul class="list-disc list-inside space-y-1 text-sm text-gray-700">
+                                ${analysis.suggestions.map(suggestion => `<li>${suggestion}</li>`).join('')}
+                            </ul>
+                        </div>
+                    ` : ''}
+                </div>
+            `;
+            
+            resultsDiv.classList.remove('hidden');
+        }
+
+        // Add swipe gesture support
+        let startX = 0;
+        let currentX = 0;
+        let isDragging = false;
+
+        document.addEventListener('touchstart', (e) => {
+            startX = e.touches[0].clientX;
+            isDragging = true;
+        });
+
+        document.addEventListener('touchmove', (e) => {
+            if (!isDragging) return;
+            currentX = e.touches[0].clientX;
+            const diffX = startX - currentX;
+            
+            if (Math.abs(diffX) > 50) {
+                const swipeContent = document.getElementById('swipe-content');
+                const pageIndex = ['foods', 'recommendations', 'analysis'].indexOf(currentPage);
+                const newIndex = diffX > 0 ? Math.min(pageIndex + 1, 2) : Math.max(pageIndex - 1, 0);
+                const newPage = ['foods', 'recommendations', 'analysis'][newIndex];
+                
+                if (newPage !== currentPage) {
+                    showPage(newPage);
+                }
+                isDragging = false;
+            }
+        });
+
+        document.addEventListener('touchend', () => {
+            isDragging = false;
+        });
+    </script>
+</body>
+</html>
